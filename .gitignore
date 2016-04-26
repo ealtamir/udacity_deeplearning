@@ -1,0 +1,6 @@
+notMNIST_small
+__pycache__
+test
+notMNIST.pickle
+.idea
+.ipynb_checkpoints
