@@ -20,6 +20,7 @@ X_train, y_train, X_test, y_test = divide_datasets(samples, labels)
 Xt_train, Xt_test, _ = preprocess(X_train, X_test)
 
 BATCH_SIZE = int(X_train.shape[0] / 100)
+print("Batch size is: ", BATCH_SIZE)
 
 weights = {}
 biases = {}

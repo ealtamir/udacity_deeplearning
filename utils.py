@@ -1,3 +1,7 @@
+import os
+import glob
+
+import scipy.ndimage as misc
 import numpy as np
 import pickle
 import tensorflow as tf
@@ -6,13 +10,69 @@ import tensorflow as tf
 CLASS_QTY = 10
 BATCH_SIZE = None
 SGD_ENABLED = True
+GLOB_DATASET_PATH = '/Users/work/Documents/datasets/notMNIST_large/*/*.png'
+MAX_SAMPLES = 1000000
+PICKLE_FILE = 'notMNIST.pickle'
 
 
-def load_mnist_data():
+def load_data_from_pickle_file():
     with open('notMNIST.pickle', 'rb') as f:
         obj = pickle.load(f)
         print("Loaded notMNIST data...")
         return obj['samples'], obj['labels']
+
+
+def load_data_from_dataset_dir():
+    file_list = glob.glob(GLOB_DATASET_PATH)
+    file_qty = min(len(file_list), MAX_SAMPLES)
+    perm = np.random.permutation(file_qty)
+    samples = None
+    labels = None
+    for i in range(file_qty):
+        path = file_list[perm[i]]
+        if i % 1000 == 0:
+            print('processing file %d' % i)
+        label = ord(path.split('/')[-2]) - ord('A')
+        try:
+            arr = misc.imread(path).reshape(1, -1)
+        except:
+            continue
+        label_vec = np.zeros((1, CLASS_QTY))
+        label_vec[:, label] = 1
+        if samples is None:
+            samples = np.matrix(arr)
+            labels = np.matrix(label_vec)
+        else:
+            samples = np.vstack((samples, arr))
+            labels = np.vstack((labels, label_vec))
+    return samples, labels
+
+
+def save_to_pickle(samples, labels):
+    with open(PICKLE_FILE, 'wb') as f:
+        obj = {'samples': samples, 'labels': labels}
+        pickle.dump(obj, f)
+        print("file saved to pickle")
+
+
+def load_pickle_dataset():
+    global BATCH_SIZE
+    with open(PICKLE_FILE, 'rb') as f:
+        obj = pickle.load(f)
+    s, t = obj['samples'], obj['labels']
+    BATCH_SIZE = int(s.shape[0] / 40)
+    print("Batch size: ", BATCH_SIZE)
+    print("Loaded pickle dataset...")
+    return s, t
+
+
+def load_mnist_data():
+    if os.path.exists('notMNIST.pickle'):
+        return load_data_from_pickle_file()
+
+    samples, labels = load_data_from_dataset_dir()
+    save_to_pickle(samples, labels)
+    return samples, labels
 
 
 def divide_datasets(samples, labels, train_prop=0.75):
